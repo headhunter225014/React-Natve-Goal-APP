@@ -1,49 +1,80 @@
-import {StyleSheet, Text, View,
-  Button, TextInput, ScrollView,FlatList} from 'react-native';
-import {useState} from "react";
-
+import {StyleSheet, View,
+  Button, TextInput, FlatList, Text} from 'react-native';
+import {useEffect, useState} from "react";
+import goalItem from "./components/GoalItem";
+import GoalItem from "./components/GoalItem";
+import GoalInput from "./components/GoalInput";
+import {StatusBar} from "expo-status-bar";
 export default function App() {
 
   //states for entered text and list of goals
-  const [enteredGoalText, setEnteredGoalText] = useState('');
   const [courseGoals, setCourseGoals] = useState([]);
+  const [modalIsVisible, setModalVisibile] = useState(false);
+  const [firstGoal, setFirstGoal] = useState(false);
 
-  //handler for input of the goal
-  function goalInputHandler(enteredText) {
-    setEnteredGoalText(enteredText);
+  useEffect(() => {
+    firstGoalEmpty();
+  }, [courseGoals]);
+
+  function startAddGoalHandler () {
+    setModalVisibile(true);
+  }
+
+  function firstGoalEmpty () {
+    if (courseGoals.length > 0){
+      setFirstGoal(true);
+    }
+    else {
+      setFirstGoal(false);
+    }
+  }
+
+  function endAddGoalHandler () {
+    setModalVisibile(false);
   }
 
   //handler for adding the goal to the list
-  function addGoalHandler() {
-    setCourseGoals((currentCourseGoals) => [...currentCourseGoals,
-      {text: enteredGoalText, key: Math.random().toString()}]);
+  function addGoalHandler(enteredGoalText) {
+    setCourseGoals((currentCourseGoals) =>
+        [...currentCourseGoals,
+      {text: enteredGoalText, id: Math.random().toString()}]);
+    endAddGoalHandler();
   }
 
   //handler for deleting goals from the list
-  function deleteGoalHandler() {
-    setCourseGoals((currentCourseGoals) => currentCourseGoals.slice(0,-1));
+  function deleteGoalHandler(id) {
+    setCourseGoals(currentCourseGoals => {
+      return currentCourseGoals.filter((goal) => goal.id !== id);
+    });
   }
 
   return (
-    <View style={styles.appContainer}>
-      <View style={styles.inputContainer}>
-        <TextInput style={styles.textInput}
-                   placeholder='Your monthly Goals!'
-                   onChangeText={goalInputHandler}/>
-        <Button title="Add goal" onPress={addGoalHandler}/>
-      </View>
-      <View style={styles.goalsContainer}>
-        <Button title="Delete Goal" onPress={deleteGoalHandler}/>
-        <FlatList data={courseGoals}
+    <>
+      <StatusBar style="light"/>
+      <View style={styles.appContainer}>
+        <Button title="Add New Goal" color="#8E43F0" onPress={startAddGoalHandler}/>
+        {modalIsVisible &&
+            <GoalInput onAddGoal={addGoalHandler}
+                       onCancel={endAddGoalHandler}
+                        visible={modalIsVisible}/>}
+        <View style={styles.goalsContainer}>
+        {!firstGoal &&
+          <View >
+            <Text style={styles.firstGoalCreate}>Looks like you don't have any goals yet. Let's go ahead and create one.</Text>
+          </View>}
+        {firstGoal &&
+              <FlatList
+                  data={courseGoals}
                   renderItem={ (itemData) =>{
-                  return (
-                      <View style={styles.goalItem}>
-                        <Text style={styles.goalText}>{itemData.item.text}</Text>
-                      </View>
-                  )}
-                  }/>
+                    return <GoalItem text={itemData.item.text}
+                                     id={itemData.item.id}
+                                     onDeleteItem={deleteGoalHandler}/>;
+                  }}
+              />
+        }
+        </View>
       </View>
-    </View>
+    </>
   );
 }
 
@@ -55,36 +86,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: '#2F3742'
   },
-  inputContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderColor: 'grey'
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: 'white',
-    width: '70%',
-    marginRight: 8,
-    padding: 8,
-    color: 'white',
-    borderRadius: 15
-  },
-  //
   goalsContainer: {
     flex: 4
   },
-  goalItem: {
-    margin: 8,
-    padding: 8,
-    borderRadius: 15,
-    backgroundColor: '#8E43F0'
-  },
-  goalText: {
-    color: 'white'
+  firstGoalCreate: {
+    fontSize: 16,
+    color: "#f31282",
+    textAlign: "center",
+    marginTop: 20,
   }
-
 });
